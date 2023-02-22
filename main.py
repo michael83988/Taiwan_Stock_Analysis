@@ -22,6 +22,23 @@ url分析:
 資產負債表: https://goodinfo.tw/tw/StockFinDetail.asp?RPT_CAT=BS_M_QUAR&STOCK_ID=2706
 損益表: https://goodinfo.tw/tw/StockFinDetail.asp?RPT_CAT=IS_M_QUAR_ACC&STOCK_ID=2706
 現金流量表: https://goodinfo.tw/tw/StockFinDetail.asp?RPT_CAT=CF_M_QUAR_ACC&STOCK_ID=2706
+#print('Hello')
+"""
+名稱: 台股分析__爬蟲
+功能: 輸入股票代碼，即可產出
+  1.資產負債與股東權益堆疊直條圖
+  2.現金流量圖堆疊圖
+  3.競爭力折線圖
+  4.報酬率折線圖
+  5.相關資訊的表格
+
+
+
+url分析:
+第一店(2706)
+資產負債表: https://goodinfo.tw/tw/StockFinDetail.asp?RPT_CAT=BS_M_QUAR&STOCK_ID=2706
+損益表: https://goodinfo.tw/tw/StockFinDetail.asp?RPT_CAT=IS_M_QUAR_ACC&STOCK_ID=2706
+現金流量表: https://goodinfo.tw/tw/StockFinDetail.asp?RPT_CAT=CF_M_QUAR_ACC&STOCK_ID=2706
 
 台積電(2330)
 資產負債表: https://goodinfo.tw/tw/StockFinDetail.asp?RPT_CAT=BS_M_QUAR&STOCK_ID=2330
@@ -64,6 +81,8 @@ import matplotlib as mpl
 import matplotlib.font_manager
 from matplotlib.font_manager import fontManager
 from matplotlib.ticker import MaxNLocator
+from matplotlib.pyplot import MultipleLocator
+import numpy as np
 
 #test
 """
@@ -76,8 +95,8 @@ for i in a:
 
 #取得股票代碼，若輸入錯誤(title會有9999年) -> 要重新請使用者輸入一次
 print('財報資料取自Goodinfo!台灣股市資訊網')
-stock_code = input('請輸入股票代碼: ')
-#stock_code = str(2330)  #測試用，到時候要註記掉
+#stock_code = input('請輸入股票代碼: ')
+stock_code = str(2330)  #測試用，到時候要註記掉
 
 #資產負債表url
 url_balance_sheet = 'https://goodinfo.tw/tw/StockFinDetail.asp?RPT_CAT=BS_M_QUAR&STOCK_ID=' + stock_code
@@ -149,7 +168,7 @@ def showResult(data, want_columns, company_name):
   """
 
   #圖一: 資產負債與股東權益堆疊圖
-  fig1 = plt.subplot(221)
+  fig1 = plt.subplot(111)
   fig1.yaxis.set_major_locator(MaxNLocator(10))
   x = data['季度']
   x.reverse()
@@ -158,18 +177,22 @@ def showResult(data, want_columns, company_name):
   equities = data['股東權益總額']
   equities.reverse()
 
-  plt.bar(x,liabilities,color='blue',label='總負債')
-  plt.bar(x,equities,color='green',label='股東權益', bottom=liabilities)
-  plt.title('資產負債與股東權益(' + company_name + ')')
+  plt.bar(x,liabilities,color='blue',label='總負債', width=0.6, zorder=3)
+  plt.bar(x,equities,color='green',label='股東權益', width=0.6, bottom=liabilities, zorder=3)
+  plt.title('資產負債與股東權益(' + company_name + ')', fontsize=18)
   plt.xticks(rotation=45)
   plt.ylabel('億元')
   plt.legend(bbox_to_anchor=(1,0.7), loc='upper left')
+  plt.grid(axis='y')
   plt.show()
+  #plt.savefig('圖片1')
+
+
 
 
   #圖二: 現金流量堆疊圖
-  fig2 = plt.subplot(222)
-  fig2.yaxis.set_major_locator(MaxNLocator(10))
+  fig2 = plt.subplot(111)
+  fig2.yaxis.set_major_locator(MaxNLocator(10)) #設定y軸刻度數量
   operating = data['營業活動之淨現金流入(出)']
   operating.reverse()
   investing = list(data['投資活動之淨現金流入(出)'])
@@ -177,57 +200,197 @@ def showResult(data, want_columns, company_name):
   financing = data['融資活動之淨現金流入(出)']
   financing.reverse()
 
-  plt.bar(x,operating,color='blue',label='營業現金')
+  plt.bar(x,operating,color='blue',label='營業現金', width=0.6, zorder=3)
 
   #根據金流的正負值決定是往上堆疊或是往下堆疊
   #參考: https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.bar.html
   baseline = []
-  print(type(investing))
+  #print(type(investing))
   for idx in range(7):
     if(investing[idx] < 0):
       if(operating[idx] < 0):
         baseline.append(operating[idx]) 
       else:
         baseline.append(0) 
-
     else:
       if(operating[idx] < 0):
         baseline.append(0) 
       else:
         baseline.append(operating[idx]) 
-      
-
-  
 
 
+  plt.bar(x,investing,color='green',label='投資現金', width=0.6, zorder=3, bottom=baseline)
 
-  plt.bar(x,investing,color='green',label='投資現金', bottom=baseline)
-  plt.title('現金流量(' + company_name + ')')
+  baseline2 = []
+  for idx in range(7):
+    if(investing[idx]*financing[idx] >= 0):
+      baseline2.append(investing[idx])
+      #print('first')
+    else:
+      if(operating[idx]*investing[idx] >= 0):
+        baseline2.append(0)
+        #print('second')
+      else:
+        baseline2.append(operating[idx])
+        #print('third')
+        #print(operating[idx]*investing[idx])
+
+  plt.bar(x,financing,color='gray',label='融資現金', width=0.6, zorder=3, bottom=baseline2)
+
+  plt.title('現金流量(' + company_name + ')', fontsize=18)
   plt.xticks(rotation=45)
   plt.ylabel('億元')
   plt.legend(bbox_to_anchor=(1,0.7), loc='upper left')
+  plt.grid(axis='y')
   plt.show()
 
 
 
-
-
-
-
-
-
+  #圖三: 競爭力折線圖
+  fig3 = plt.subplot()
   
-  #畫表格 -> 不需要了
+  fig3.yaxis.set_major_locator(MultipleLocator(10)) #設定y軸刻度間距
+  #fig3.yaxis.set_major_locator(MaxNLocator(10)) -> 無法多種設定都用上
+
+  operating_income = data['營業利益']
+  operating_income.reverse()
+  operating_income = np.array(operating_income)
+  revenue = data['營業收入']
+  revenue.reverse()
+  revenue = np.array(revenue)
+  operating_margin = operating_income / revenue * 100
+  lns1 = fig3.plot(x,operating_margin, color='orange', marker='o', label='營業利益率')
+
+
+  gross_profit = data['營業毛利']
+  gross_profit.reverse()
+  gross_profit = np.array(gross_profit)
+  gross_profit_margin = gross_profit / revenue * 100
+  lns2 = fig3.plot(x,gross_profit_margin,color='gray', marker='v',label='毛利率')
+
+
+  net_profit = data['稅後淨利']
+  net_profit.reverse()
+  net_profit = np.array(net_profit)
+  net_profit_margin = net_profit / revenue * 100
+  lns3 = fig3.plot(x,net_profit_margin,color='gold', marker='^',label='稅後純益率')
+
+
+  earn_per_share = data['每股稅後盈餘(元)']
+  earn_per_share.reverse()
+  lns4 = fig3.plot(x,earn_per_share,color='blue', marker='*',label='EPS每股盈餘')
+
+  fig3_1 = fig3.twinx()
+  lns5 = fig3_1.plot(x,revenue,color='green', marker='D',label='營收')
+
+
+  #plt.ylim(bottom=0)  #上限該如何設定，維持10為間距，且包含整體的最大值? -> OK
+  #設定上下臨界值
+  fig3.set_ylim([0,int(max(gross_profit_margin))+10])
+
+  fig3_1_interval = max(revenue)/((int(max(gross_profit_margin))+10)/10)
+  fig3_1.set_ylim(bottom=0,top=max(revenue)+fig3_1_interval)
+
+
+  plt.title('競爭力(' + company_name + ')', fontsize=18)
+  fig3.set_ylabel('%')
+  fig3_1.set_ylabel('億元')
+  plt.grid(axis='y')
+  plt.xticks(rotation=45)
+
+  #將雙y軸的label合併顯示
+  lns = lns1 + lns2 + lns3 + lns4 + lns5
+  labels = [l.get_label() for l in lns]
+  plt.legend(lns, labels, bbox_to_anchor=(1.15,0.7), loc='upper left')
+  plt.show()
+
+
+
+  #圖4: 報酬率折線圖
+  fig4 = plt.subplot(111)
+  fig4.yaxis.set_major_locator(MaxNLocator(7))
+  equities = np.array(equities)
+  return_on_equity = net_profit / equities * 100
+  fig4.plot(x,return_on_equity,color='blue', marker='o',label='ROE股東權益報酬率')
+  total_assets = data['資產總額']
+  total_assets.reverse()
+  total_assets = np.array(total_assets)
+  return_on_assets = net_profit / total_assets * 100
+  fig4.plot(x,return_on_assets,color='orange', marker='o',label='ROA資產報酬率')
+
+
+
+  fig4.set_ylim([0,max(return_on_equity)+max(return_on_equity)/7])
+  fig4.legend(bbox_to_anchor=(1,0.7), loc='upper left')
+  fig4.grid(axis='y')
+  plt.title('報酬率(' + company_name + ')', fontsize=18)
+  fig4.set_ylabel('%')
+  plt.show()
+
+
+  #在畫面上呈現財報(用print的方式)
+  #轉換成表格的形式
+  #經過上面的操作，部分的list已經被轉換順序了 -> 先把剩下未轉換順序的都轉好，再來增加新內容，最後輸出
+  inventory=data['存貨']
+  inventory.reverse()
+  new_worth=data['每股淨值(元)']
+  new_worth.reverse()
+  operating_cost=data['營業成本']
+  operating_cost.reverse()
+  operating_expenses=data['營業費用']
+  operating_expenses.reverse()
+  non_industry_profit_and_cost=data['業外損益合計']
+  non_industry_profit_and_cost.reverse()
+
+  #增加各個比率
+  data['營業利益率']=list(operating_margin)
+  data['毛利率']=list(gross_profit_margin)
+  data['稅後純益率']=list(net_profit_margin)
+
+  #以表格方式呈現在console
+  print()
+  print(company_name, '財務報表統整(單位為「億元」或「%」):')
+  for title, values in data.items():
+    print('{}'.format(title), end=': ')
+    for val in values:
+      #mytype=str(type(val))
+      #print('{0:<30}'.format(mytype), end=' ')
+      if(type(val) == np.float64):
+        print('{:.2f}'.format(val), end=', ')
+      else:
+        print('{}'.format(val), end=', ')
+    print()
+  #print(data)
+
+
+  answer = input('\n是否要輸出成excel檔?(Y/N):')
+  if(answer == 'Y' or answer == 'y'):
+    outputFile()
+    print('輸出完成!')
+  else:
+    print('程式結束')
+  
+
+
+
+def outputFile():
+  print('excel檔輸出!')
+
+
+
+
+
   """
+  #畫表格 -> 不需要了
+  
   ax = plt.subplot(111)
   #dataa = [[1, 2, 3], [4, 45, 6], [7, 8, 9]]
   #column_labels = ['Column 1', 'Column 2', 'Column 3']
-  """
-  print(data['季度'])
+  
+  #print(data['季度'])
   col_names = list(data)  #從dict中將key值當作column name
 
-  #轉換成表格的形式
-  financial_statement_table = []
+  
   #print(data['我沒有我沒有?'])
   for idx, q in enumerate(data['季度']):
     temp_list = [q]
@@ -239,10 +402,10 @@ def showResult(data, want_columns, company_name):
 
   #print(col_names)
   #將table以圖的方式顯示，不切實際，而且內容會變成"--"
-  print(financial_statement_table)
+  #print(financial_statement_table)
   print('輸出完成')
 
-  """
+  
   ax.axis('tight')
   ax.axis('off')
   ax.table(cellText=financial_statement_table,
@@ -290,10 +453,10 @@ dataa = {
   '融資活動之淨現金流入(出)': [-1304.0, 190.8, -190.9, 822.8, -353.2, 750.3, 146.2]
 }
 
-#showResult(dataa, want_column, 'company_name')
+showResult(dataa, want_column, 'company_name')
 
 #============================== MAIN FUNCTION ==============================
-
+"""
 for idx, url in enumerate(urls):
   res = requests.get(url, headers=headers)
   res.encoding = 'utf-8'
@@ -357,6 +520,9 @@ for idx, url in enumerate(urls):
 if(company_name != ''):
   print(total_data)
   showResult(total_data,want_column, company_name)
+
+"""
+
 
 
 
