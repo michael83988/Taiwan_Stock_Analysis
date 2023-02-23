@@ -243,6 +243,9 @@ def showResult(data, want_columns, company_name):
   revenue.reverse()
   revenue = np.array(revenue)
 
+  #將revenue取絕對值，用來計算各種率
+  revenue_for_cal = np.absolute(revenue)  
+
   #針對金融業，會有找不到「營業利益」的問題 -> 要自己算
   operating_income = []
   if('營業利益' in data.keys()):
@@ -263,7 +266,7 @@ def showResult(data, want_columns, company_name):
   #print('營業利益:'+data['營業利益'])
   
   operating_income = np.array(operating_income)
-  operating_margin = operating_income / revenue * 100
+  operating_margin = operating_income / revenue_for_cal * 100
   lns1 = fig3.plot(x,operating_margin, color='orange', marker='o', label='營業利益率')
 
   
@@ -278,12 +281,12 @@ def showResult(data, want_columns, company_name):
     gross_profit = revenue
   
 
-  gross_profit_margin = gross_profit / revenue * 100
+  gross_profit_margin = gross_profit / revenue_for_cal * 100
   lns2 = fig3.plot(x,gross_profit_margin,color='gray', marker='v',label='毛利率')
   net_profit = data['稅後淨利']
   net_profit.reverse()
   net_profit = np.array(net_profit)
-  net_profit_margin = net_profit / revenue * 100
+  net_profit_margin = net_profit / revenue_for_cal * 100
   lns3 = fig3.plot(x,net_profit_margin,color='gold', marker='^',label='稅後純益率')
 
 
@@ -302,8 +305,11 @@ def showResult(data, want_columns, company_name):
   fig3_interval = (fig3_max_max - fig3_min_min) / 10
   fig3.set_ylim([fig3_min_min - fig3_interval, fig3_max_max + fig3_interval]) #bug! 要考慮有負數的情況
 
-  fig3_1_interval = max(revenue)/((int(max(gross_profit_margin))+10)/10)
-  fig3_1.set_ylim(bottom=0,top=max(revenue)+fig3_1_interval)  #bug! 要考慮有負數的情況
+
+  fig3_1_max = max(revenue)
+  fig3_1_min = min(min(revenue),0)
+  fig3_1_interval = (fig3_1_max - fig3_1_min) / 10
+  fig3_1.set_ylim(bottom= fig3_1_min - fig3_1_interval,top=fig3_1_max + fig3_1_interval)  #bug! 要考慮有負數的情況
 
 
   plt.title('競爭力(' + company_name + ')', fontsize=18)
@@ -558,7 +564,24 @@ dataa5 = {
   '融資活動之淨現金流入(出)': [-5.47, -0.024, -0.023, -4.99, 0.27, -0.006, -0.024]
 }
 
-#showResult(dataa5, want_column, 'company_name')
+#開發金
+dataa6 = {
+  '季度': ['2022Q4', '2022Q3', '2022Q2', '2022Q1', '2021Q4', '2021Q3', '2021Q2'], 
+  '資產總額': [35371.0, 36288.0, 34834.0, 35013.0, 34586.0, 33923.0, 34983.0], 
+  '負債總額': [33284.0, 34603.0, 32965.0, 32388.0, 31655.0, 30874.0, 31874.0], 
+  '股東權益總額': [2088.0, 1684.0, 1869.0, 2625.0, 2931.0, 3050.0, 3109.0], 
+  '每股淨值(元)': [11.32, 9.12, 10.12, 14.22, 15.88, 14.81, 15.07], 
+  '營業收入': [-35.47, 251.7, 325.8, 416.6, 439.6, 496.1, 455.0], 
+  '營業費用': [65.63, 79.81, 69.2, 76.08, 78.33, 95.32, 84.16], 
+  '營業支出': [-16.24, -165.6, -256.8, -300.5, -377.2, -303.3, -353.1], 
+  '稅後淨利': [-39.56, 67.04, 39.44, 96.74, 43.51, 137.6, 70.94],
+  '每股稅後盈餘(元)': [-0.24, 0.4, 0.23, 0.58, 0.29, 0.92, 0.48],
+  '營業活動之淨現金流入(出)': [194.8, 438.3, 219.0, -250.5, 168.9, 482.0, -60.89], 
+  '投資活動之淨現金流入(出)': [286.9, -255.9, -369.9, -429.1, 222.2, -324.0, 217.7], 
+  '融資活動之淨現金流入(出)': [7.99, -215.2, 13.17, 56.89, -39.34, -365.0, 308.4]
+}
+
+#showResult(dataa6, want_column, 'company_name')
 
 #============================== MAIN FUNCTION ==============================
 
@@ -625,6 +648,7 @@ for idx, url in enumerate(urls):
 if(company_name != ''):
   print(total_data)
   showResult(total_data,want_column, company_name)
+
 
 
 
